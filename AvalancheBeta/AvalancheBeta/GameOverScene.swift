@@ -4,7 +4,6 @@
 //
 //  Created by Cooper Kunz on 7/9/16.
 //  Copyright © 2016 Cooper.Kunz. All rights reserved.
-//
 
 import UIKit
 import SpriteKit
@@ -12,9 +11,10 @@ import SpriteKit
 class GameOverScene: SKScene {
     
     var contentCreated = false
+    var scoreEnd: String!
     
-    override func didMoveToView(view: SKView) {
-        
+    override func didMove(to view: SKView) {
+    
         if (!self.contentCreated) {
             self.createContent()
             self.contentCreated = true
@@ -25,44 +25,50 @@ class GameOverScene: SKScene {
         
         let gameOverLabel = SKLabelNode(fontNamed: "Courier")
         gameOverLabel.fontSize = 50
-        gameOverLabel.fontColor = SKColor.blackColor()
+        gameOverLabel.fontColor = SKColor.black
         gameOverLabel.text = "Game Over!"
-        gameOverLabel.position = CGPointMake(self.size.width/2, 2.0 / 3.0 * self.size.height);
+        gameOverLabel.position = CGPoint(x: self.size.width/2, y: 2.0 / 3.0 * self.size.height);
         
         self.addChild(gameOverLabel)
         
+        //need to customize score label at some point
+        let scoreLabel = SKLabelNode(fontNamed:  "Helvetica")
+        scoreLabel.fontColor = UIColor.black
+        scoreLabel.fontSize = 40
+        scoreLabel.text = "Your score was \(scoreEnd!)"
+        scoreLabel.position = CGPoint(x: self.frame.midX, y: self.frame.size.height - 70)
+        
+        self.addChild(scoreLabel)
+
+        
         let tapLabel = SKLabelNode(fontNamed: "Courier")
         tapLabel.fontSize = 25
-        tapLabel.fontColor = SKColor.blackColor()
+        tapLabel.fontColor = SKColor.black
         tapLabel.text = "(Tap to Play Again)"
-        tapLabel.position = CGPointMake(self.size.width/2, gameOverLabel.frame.origin.y - gameOverLabel.frame.size.height - 40);
+        tapLabel.position = CGPoint(x: self.size.width/2, y: gameOverLabel.frame.origin.y - gameOverLabel.frame.size.height - 40);
         
         self.addChild(tapLabel)
         
-        // black space color
-        self.backgroundColor = SKColor.whiteColor()
+        self.backgroundColor = SKColor.white
         
     }
     
-    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        //Stub
     }
     
-    override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?)  {
-        
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?)  {
+        //Stub
     }
     
-    override func touchesCancelled(touches: Set<UITouch>?, withEvent event: UIEvent?) {
-        
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        //Stub
     }
     
-    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?)  {
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?)  {
         
         let gameScene = GameScene(size: self.size)
-        
-        gameScene.scaleMode = .AspectFill
-        
-        self.view?.presentScene(gameScene, transition: SKTransition.doorsCloseHorizontalWithDuration(1.0))
-        
+        gameScene.scaleMode = .aspectFill
+        self.view?.presentScene(gameScene, transition: SKTransition.doorsCloseHorizontal(withDuration: 1.0))
     }
 }

@@ -4,7 +4,6 @@
 //
 //  Created by Cooper Kunz on 7/8/16.
 //  Copyright (c) 2016 Cooper.Kunz. All rights reserved.
-//
 
 import SpriteKit
 import CoreMotion
@@ -12,154 +11,251 @@ import CoreMotion
 class GameScene: SKScene, SKPhysicsContactDelegate{
     
     var gameOver = false
-    
+    var score = 0
+    var time = 0
     var ball = SKSpriteNode()
-
-    
+    var scoreLabel = SKLabelNode()
     var motionManager: CMMotionManager!
-    
+    var movingObjects = SKSpriteNode()
     let kBallSize = CGSize(width: 30, height: 20)
     let kBallName = "ball"
-    
+    let kVertPathDown = "path"
+    let kVertPathName = "leftPath"
+    let kVertPathName2 = "rightPath"
     enum ColliderType: UInt32 {
-        
-        case Ball = 1
-        case Object = 2
-        case Path = 3
+        case ball = 1
+        case object = 2
+        case path = 3
     }
 
-    
-    //MARK: View did load
-    override func didMoveToView(view: SKView) {
+    override func didMove(to view: SKView) {
         
+        self.backgroundColor = UIColor.white
+        
+        scoreLabel.fontName = "Helvetica"
+        scoreLabel.fontColor = UIColor.black
+        scoreLabel.fontSize = 60
+        scoreLabel.text = (String)(score)
+        scoreLabel.position = CGPoint(x: self.frame.midX, y: self.frame.size.height - 70)
+        self.addChild(scoreLabel)
+        
+        //Allow physics
         self.physicsWorld.contactDelegate = self
+        //Allow access to phone accelerametor
         self.motionManager = CMMotionManager()
         self.motionManager.startAccelerometerUpdates()
         
-        setUpBall()
         setUpBoundaries()
-        setUpPath(self.frame.width / 2, yPos: 50)
         
-         self.backgroundColor = SKColor.whiteColor()
+        createInitialPath()
+        
+        setUpPath()
+        
+        self.addChild(movingObjects)
+    
+        _ = Timer.scheduledTimer(timeInterval: 2.5, target: self, selector: #selector(GameScene.setUpPath), userInfo: nil, repeats: true)
+        
+        setUpBall()
     }
     
-    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
-    
-        
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        //Do nothing
     }
    
-    override func update(currentTime: CFTimeInterval) {
-        //Pass to process sliding func in real time
+    override func update(_ currentTime: TimeInterval) {
+        
         processUserMotionForUpdate(currentTime)
+        
+        self.time += 1
+        
+        //Add time to the score
+        self.score = time
+        
+        scoreLabel.text = String(score)
     }
 
-    func didBeginContact(contact: SKPhysicsContact) {
+    func didBegin(_ contact: SKPhysicsContact) {
         
-        if  contact.bodyA.categoryBitMask == ColliderType.Path.rawValue {  }
+        //If the ball is touching the path, continue
+        if  contact.bodyA.categoryBitMask == ColliderType.path.rawValue {  }
     
+        //Else, if the ball is hitting a boundary, stop the game.
         else {
         
             gameOver = true
         
             motionManager.stopAccelerometerUpdates()
-        
+            
+            //Present the game over View
             let gameOverScene: GameOverScene = GameOverScene(size: size)
-            view?.presentScene(gameOverScene, transition: SKTransition.doorsOpenHorizontalWithDuration(1.0))
+            gameOverScene.scoreEnd = scoreLabel.text
+            view?.presentScene(gameOverScene, transition: SKTransition.doorsOpenHorizontal(withDuration: 1.0))
         }
     }
     
-    
     func setUpBall() {
-     
+        
         let ball = makeBall()
-        ball.position = CGPoint(x: size.width / 2.0, y: kBallSize.height * 5)
+        ball.position = CGPoint(x: size.width / 2.0, y: size.height / 2)
         addChild(ball)
     }
     
     func makeBall() -> SKNode {
         
+        //May need to find a cooler looking ball. lol.
         let ball = SKSpriteNode(imageNamed: "ball_img.png")
-        
         ball.name = kBallName
         ball.physicsBody = SKPhysicsBody(circleOfRadius: kBallSize.height / 2)
-        ball.physicsBody!.dynamic = true
-        //I think I'm going to want to make this true as soon as I make the "path" it can sit on..
+        ball.physicsBody!.isDynamic = true
         ball.physicsBody!.affectedByGravity = true
         ball.physicsBody!.mass = 0.02
-        ball.physicsBody!.categoryBitMask = ColliderType.Ball.rawValue
-        ball.physicsBody!.contactTestBitMask = ColliderType.Path.rawValue
-        ball.physicsBody!.collisionBitMask = ColliderType.Object.rawValue
+        ball.physicsBody!.categoryBitMask = ColliderType.ball.rawValue
+        ball.physicsBody!.contactTestBitMask = ColliderType.path.rawValue
+        ball.physicsBody!.collisionBitMask = ColliderType.object.rawValue
         
         return ball
     }
     
     func setUpBoundaries() {
         
-        // changed ground from var to let
+        //These positions are probably only nice for my 6s screensize tbh.
+        //Will resize if I actually continue dev. Currently just testing for fun.
         let groundLeft = SKNode()
         
-        groundLeft.position = CGPointMake(325, 0)
-        groundLeft.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(10, self.frame.height))
-        groundLeft.physicsBody!.dynamic = false
+        groundLeft.position = CGPoint(x: 325, y: 0)
+        groundLeft.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 10, height: self.frame.height * 2))
+        groundLeft.physicsBody!.isDynamic = false
         
-        groundLeft.physicsBody!.categoryBitMask = ColliderType.Object.rawValue
-        groundLeft.physicsBody!.contactTestBitMask = ColliderType.Object.rawValue
-        groundLeft.physicsBody!.collisionBitMask = ColliderType.Object.rawValue
+        groundLeft.physicsBody!.categoryBitMask = ColliderType.object.rawValue
+        groundLeft.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        groundLeft.physicsBody!.collisionBitMask = ColliderType.object.rawValue
         
         self.addChild(groundLeft)
         
         let ground = SKNode()
-        ground.position = CGPointMake(0, 0)
-        ground.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.size.width * 2, 1))
-        ground.physicsBody!.dynamic = false
         
-        ground.physicsBody!.categoryBitMask = ColliderType.Object.rawValue
-        ground.physicsBody!.contactTestBitMask = ColliderType.Object.rawValue
-        ground.physicsBody!.collisionBitMask = ColliderType.Object.rawValue
+        ground.position = CGPoint(x: 0, y: 0)
+        ground.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: self.size.width * 2, height: 1))
+        ground.physicsBody!.isDynamic = false
+        
+        ground.physicsBody!.categoryBitMask = ColliderType.object.rawValue
+        ground.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        ground.physicsBody!.collisionBitMask = ColliderType.object.rawValue
         
         self.addChild(ground)
         
-        // changed ground from var to let
+        let roof = SKNode()
+        
+        roof.position = CGPoint(x: 0, y: 740)
+        roof.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: self.size.width * 2, height: 1))
+        roof.physicsBody!.isDynamic = false
+        
+        roof.physicsBody!.categoryBitMask = ColliderType.object.rawValue
+        roof.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        roof.physicsBody!.collisionBitMask = ColliderType.object.rawValue
+        
+        self.addChild(roof)
+        
         let groundRight = SKNode()
         
-        groundRight.position = CGPointMake(700, 0)
-        groundRight.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(10, self.frame.height))
-        groundRight.physicsBody!.dynamic = false
+        groundRight.position = CGPoint(x: 700, y: 0)
+        groundRight.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 10, height: self.frame.height * 2))
+        groundRight.physicsBody!.isDynamic = false
         
-        groundRight.physicsBody!.categoryBitMask = ColliderType.Object.rawValue
-        groundRight.physicsBody!.contactTestBitMask = ColliderType.Object.rawValue
-        groundRight.physicsBody!.collisionBitMask = ColliderType.Object.rawValue
+        groundRight.physicsBody!.categoryBitMask = ColliderType.object.rawValue
+        groundRight.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        groundRight.physicsBody!.collisionBitMask = ColliderType.object.rawValue
         
         self.addChild(groundRight)
-        
     }
-
-    func setUpPath(xPos: CGFloat, yPos: CGFloat){
+    
+    func createInitialPath(){
         
         let pathTexture = SKTexture(imageNamed: "path_temporary.png")
         let path = SKSpriteNode(texture: pathTexture)
         
-        path.position = CGPointMake(xPos, yPos)
-        path.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(pathTexture.size().width - 20, 40))
-        path.physicsBody!.dynamic = false
-        path.physicsBody!.categoryBitMask = ColliderType.Path.rawValue
-        path.physicsBody!.contactTestBitMask = ColliderType.Object.rawValue
-        path.physicsBody!.collisionBitMask = ColliderType.Object.rawValue
+        let movePath = SKAction.moveBy(x: 0, y: 1000, duration: TimeInterval(10))
+        let removePath = SKAction.removeFromParent()
+        let movePathForever = SKAction.sequence([movePath, removePath])
+        var increase = (100)
         
-        self.addChild(path)
+        let xPos = CGFloat(self.frame.width / 2)
+        let yPos = CGFloat(Int(arc4random()) % 50 + increase)
         
+        path.position = CGPoint(x: xPos, y: yPos)
+        path.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: pathTexture.size().width - 20, height: 50))
+        path.physicsBody!.isDynamic = false
+        path.physicsBody!.categoryBitMask = ColliderType.path.rawValue
+        path.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        path.physicsBody!.collisionBitMask = ColliderType.object.rawValue
+        path.run(movePathForever)
+
         
+        self.movingObjects.addChild(path)
+        
+        increase += 100
     }
-    //Tbh, I copied this func from stackoverflow
-    func processUserMotionForUpdate(currentTime: CFTimeInterval) {
+
+    func setUpPath(){
+        
+        let pathTexture = SKTexture(imageNamed: "path_temporary.png")
+        let path = SKSpriteNode(texture: pathTexture)
+
+        let movePath = SKAction.moveBy(x: 0, y: 1000, duration: TimeInterval(10))
+        let removePath = SKAction.removeFromParent()
+        let movePathForever = SKAction.sequence([movePath, removePath])
+        var increase = (100)
+        
+        let xPos = CGFloat(Int(arc4random()) % (Int(self.frame.width / 2)))
+        let yPos = CGFloat(Int(arc4random()) % 50 + increase)
     
-        if let ball = childNodeWithName(kBallName) as? SKSpriteNode {
+        path.position = CGPoint(x: xPos, y: yPos)
+        path.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: pathTexture.size().width - 20, height: 50))
+        path.physicsBody!.isDynamic = false
+        path.physicsBody!.categoryBitMask = ColliderType.path.rawValue
+        path.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        path.physicsBody!.collisionBitMask = ColliderType.object.rawValue
+        path.run(movePathForever)
+        
+        movingObjects.addChild(path)
+        
+        let leftPath = SKSpriteNode(texture: pathTexture)
+        
+        leftPath.position = CGPoint(x:xPos - (225),y: yPos + 150.0)
+        leftPath.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: pathTexture.size().width - 20, height: 50))
+        leftPath.physicsBody!.isDynamic = false
+        leftPath.physicsBody!.categoryBitMask = ColliderType.path.rawValue
+        leftPath.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        leftPath.physicsBody!.collisionBitMask = ColliderType.object.rawValue
+        leftPath.run(movePathForever)
+        
+        movingObjects.addChild(leftPath)
+        
+        let rightPath = SKSpriteNode(texture: pathTexture)
+        
+        rightPath.position = CGPoint(x: xPos + (225),y: yPos - 150.0)
+        rightPath.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: pathTexture.size().width - 20, height: 50))
+        rightPath.physicsBody!.isDynamic = false
+        rightPath.physicsBody!.categoryBitMask = ColliderType.path.rawValue
+        rightPath.physicsBody!.contactTestBitMask = ColliderType.object.rawValue
+        rightPath.physicsBody!.collisionBitMask = ColliderType.object.rawValue
+        rightPath.run(movePathForever)
+
+        movingObjects.addChild(rightPath)
+        
+        increase+=100
+    }
+    
+    func processUserMotionForUpdate(_ currentTime: CFTimeInterval) {
+    
+        if let ball = childNode(withName: kBallName) as? SKSpriteNode {
    
             if let data = motionManager.accelerometerData {
+                
                 //Force of tiltage
                 if fabs(data.acceleration.x) > 0.1{
                     //Force of sliding
-                    ball.physicsBody!.applyForce(CGVectorMake(50.0 * CGFloat(data.acceleration.x), 0))
+                    ball.physicsBody!.applyForce(CGVector(dx: 50.0 * CGFloat(data.acceleration.x), dy: 0))
                 }
             }
         }
