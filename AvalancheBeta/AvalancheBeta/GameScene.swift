@@ -36,12 +36,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         scoreLabel.fontColor = UIColor.black
         scoreLabel.fontSize = 60
         scoreLabel.text = (String)(score)
+        scoreLabel.zPosition = 3
         scoreLabel.position = CGPoint(x: self.frame.midX, y: self.frame.size.height - 70)
         self.addChild(scoreLabel)
         
         //Allow physics
         self.physicsWorld.contactDelegate = self
-        //Allow access to phone accelerametor
+        //Allow access to phone accelerametor for da tilt
         self.motionManager = CMMotionManager()
         self.motionManager.startAccelerometerUpdates()
         
@@ -57,19 +58,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         
         setUpBall()
     }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        //Do nothing
-    }
-   
+
     override func update(_ currentTime: TimeInterval) {
         
         processUserMotionForUpdate(currentTime)
         
         self.time += 1
         
-        //Add time to the score
-        self.score = time
+        self.score = time / 3
         
         scoreLabel.text = String(score)
     }
@@ -89,7 +85,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             //Present the game over View
             let gameOverScene: GameOverScene = GameOverScene(size: size)
             gameOverScene.scoreEnd = scoreLabel.text
-            view?.presentScene(gameOverScene, transition: SKTransition.doorsOpenHorizontal(withDuration: 1.0))
+            view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 1.0))
         }
     }
     

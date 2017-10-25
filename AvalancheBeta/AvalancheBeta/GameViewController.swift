@@ -16,14 +16,9 @@ class GameViewController: UIViewController {
         if let scene = GameScene(fileNamed:"GameScene") {
 
             let skView = self.view as! SKView
-            skView.showsFPS = true
-            skView.showsNodeCount = true
-            
-            /* Sprite Kit applies additional optimizations to improve rendering performance */
-            skView.ignoresSiblingOrder = true
-            
+      
+            skView.ignoresSiblingOrder = false
             scene.scaleMode = .aspectFill
-            
             skView.presentScene(scene)
         }
     }
@@ -39,12 +34,7 @@ class GameViewController: UIViewController {
             return .all
         }
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Release any cached data, images, etc that aren't in use.
-    }
-
+    
     override var prefersStatusBarHidden : Bool {
         return true
     }
